@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EquiVoice - Bias Detection</title>
+  <style>
+    :root {
+      --bg-light: #f4f7fa;
+      --bg-dark: #2c3e50;
+      --text-light: #333;
+      --text-dark: #ecf0f1;
+      --primary: #3498db;
+      --secondary: #e74c3c;
+      --accent: #2ecc71;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+      background: var(--bg-light);
+      color: var(--text-light);
+      transition: all 0.3s ease;
+    }
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      color: var(--primary);
+    }
+    .section {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+    body.dark .section {
+      background: #34495e;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    .section:hover {
+      transform: translateY(-5px);
+    }
+    button {
+      padding: 10px 20px;
+      background: linear-gradient(45deg, var(--primary), #2980b9);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(45deg, #2980b9, var(--primary));
+    }
+    textarea, input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      background: #fff;
+      color: var(--text-light);
+    }
+    body.dark textarea, body.dark input {
+      background: #3d566e;
+      border-color: #5d6d7e;
+      color: var(--text-dark);
+    }
+    .flag { color: var(--secondary); font-style: italic; }
+    .tip { color: var(--accent); font-style: italic; }
+    .summary { padding: 15px; border-radius: 5px; background: #ecf0f1; }
+    body.dark .summary { background: #3d566e; }
+    .transcript-line { margin: 5px 0; padding: 5px; border-bottom: 1px solid #eee; }
+    body.dark .transcript-line { border-color: #5d6d7e; }
+    .collapsible-header {
+      cursor: pointer;
+      padding: 10px;
+      background: var(--primary);
+      color: white;
+      border-radius: 5px 5px 0 0;
+      margin: 10px 0 0;
+    }
+    .collapsible-content {
+      display: none;
+      padding: 10px;
+      border: 1px solid var(--primary);
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      background: #fff;
+    }
+    body.dark .collapsible-content { background: #34495e; }
+    .collapsible-content.active { display: block; }
+    #keyword-cloud span {
+      display: inline-block;
+      margin: 5px;
+      padding: 5px 10px;
+      background: linear-gradient(45deg, var(--primary), var(--accent));
+      color: white;
+      border-radius: 15px;
+      cursor: pointer;
+    }
+    #chart-container { max-width: 400px; margin: 20px auto; }
+    .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+    #theme-toggle { position: fixed; top: 20px; right: 20px; }
+    #error-message { color: var(--secondary); display: none; margin-top: 10px; }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8em; }
+      .section { padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <button id="theme-toggle">Toggle Dark Mode</button>
+  <h1>EquiVoice: Bias Detection</h1>
+  
+  <div class="section" id="upload-section">
+    <p>Upload a meeting transcript (.txt)</p>
+    <input type="file" id="upload" accept=".txt">
+    <button id="analyze-file-btn">Analyze File</button>
+    <div id="upload-error" class="error-message"></div>
+  </div>
+  
+  <div class="section" id="paste-section">
+    <p>Paste your transcript below</p>
+    <textarea id="paste-input" placeholder="e.g., Speaker 1\nThanks a lot..."></textarea>
+    <button id="analyze-text-btn">Analyze Text</button>
+    <div id="paste-error" class="error-message"></div>
+  </div>
+  
+  <div class="section" id="settings-section">
+    <p>Customize Detection Thresholds</p>
+    <div class="settings">
+      <label>Dominance (%): <input type="number" id="dominance-threshold" value="40" min="10" max="90"></label>
+      <label>Inclusion (%): <input type="number" id="inclusion-threshold" value="5" min="1" max="20"></label>
+      <label>Groupthink (agreements): <input type="number" id="groupthink-threshold" value="3" min="2" max="10"></label>
+      <label>Interruptions (lines): <input type="number" id="interrupt-threshold" value="2" min="1" max="10"></label>
+    </div>
+  </div>
+
+  <div class="section" id="custom-rules-section">
+    <p>Custom Bias Rules (e.g., "hate:warning = Negative tone", "/bad.*/:error = Harsh phrasing")</p>
+    <textarea id="custom-rules" placeholder="keyword:severity = message"></textarea>
+  </div>
+  
+  <div class="section" id="results-section" style="display: none;">
+    <div class="collapsible-header" onclick="toggleCollapsible('summary-content')">Summary</div>
+    <div id="summary-content" class="collapsible-content">
+      <div id="summary" class="summary"></div>
+      <button id="export-btn">Export as .txt</button>
+    </div>
+    
+    <div class="collapsible-header" onclick="toggleCollapsible('participation-content')">Participation Chart</div>
+    <div id="participation-content" class="collapsible-content">
+      <div id="chart-container"><canvas id="participation-chart"></canvas></div>
+    </div>
+    
+    <div class="collapsible-header" onclick="toggleCollapsible('keyword-content')">Keyword Cloud</div>
+    <div id="keyword-content" class="collapsible-content">
+      <div id="keyword-cloud"></div>
+    </div>
+    
+    <div class="collapsible-header" onclick="toggleCollapsible('collab-content')">Collaboration Metrics</div>
+    <div id="collab-content" class="collapsible-content">
+      <div id="collab-metrics"></div>
+    </div>
+    
+    <div class="collapsible-header" onclick="toggleCollapsible('lang-content')">Language & Translation</div>
+    <div id="lang-content" class="collapsible-content">
+      <div id="language-detection"></div>
+    </div>
+    
+    <div class="collapsible-header" onclick="toggleCollapsible('history-content')">Historical Comparison</div>
+    <div id="history-content" class="collapsible-content">
+      <div id="historical-comparison"></div>
+    </div>
+    
+    <div class="collapsible-header" onclick="toggleCollapsible('transcript-content')">Annotated Transcript</div>
+    <div id="transcript-content" class="collapsible-content">
+      <div id="annotated-transcript"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/compromise@14.11.0/builds/compromise.min.js" onerror="console.error('Compromise failed to load'); window.nlp = null;"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" onerror="console.error('Chart.js failed to load'); window.Chart = null;"></script>
+  <script src="https://unpkg.com/franc-min@6.2.0/franc-min.js" onerror="console.error('Franc failed to load'); window.franc = null;"></script>
+  
+  <script>
+    let currentAnalysis = null;
+    let currentContributions = null;
+    let chartInstance = null;
+
+    document.getElementById('analyze-file-btn').addEventListener('click', analyzeFile);
+    document.getElementById('analyze-text-btn').addEventListener('click', analyzeText);
+    document.getElementById('export-btn').addEventListener('click', exportResults);
+    document.getElementById('theme-toggle').addEventListener('click', () => document.body.classList.toggle('dark'));
+
+    function showError(elementId, message) {
+      const errorDiv = document.getElementById(elementId);
+      errorDiv.style.display = 'block';
+      errorDiv.textContent = message;
+      setTimeout(() => errorDiv.style.display = 'none', 5000);
+    }
+
+    function analyzeFile() {
+      const fileInput = document.getElementById('upload');
+      const file = fileInput.files[0];
+      if (!file) return showError('upload-error', 'Please upload a .txt file.');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          processTranscript(e.target.result);
+        } catch (error) {
+          console.error('File processing error:', error);
+          showError('upload-error', 'Error processing file: ' + error.message);
+        }
+      };
+      reader.onerror = () => showError('upload-error', 'Error reading file.');
+      reader.readAsText(file);
+    }
+
+    function analyzeText() {
+      const text = document.getElementById('paste-input').value.trim();
+      if (!text) return showError('paste-error', 'Please paste a transcript.');
+      try {
+        processTranscript(text);
+      } catch (error) {
+        console.error('Text processing error:', error);
+        showError('paste-error', 'Error processing text: ' + error.message);
+      }
+    }
+
+    function processTranscript(text) {
+      console.log('Processing transcript:', text.substring(0, 100) + '...');
+      const contributions = parseTranscript(text);
+      console.log('Parsed contributions:', contributions);
+      const analysis = analyzeContributions(contributions);
+      console.log('Analysis result:', analysis);
+      currentAnalysis = analysis;
+      currentContributions = contributions;
+      saveHistoricalData(analysis);
+      displayResults(analysis, contributions);
+    }
+
+    function parseTranscript(text) {
+      const lines = text.trim().split('\n');
+      const contributions = [];
+      let lastSpeaker = null;
+      let syntheticTimestamp = 0;
+
+      lines.forEach((line, i) => {
+        line = line.trim();
+        if (!line) return; // Skip empty lines
+
+        let speaker, content, timestampSec;
+        const timestampMatch = line.match(/\[(\d+:\d+)\]\s*(.*?):\s*(.*)/);
+        if (timestampMatch) {
+          // Structured line with timestamp
+          const [_, time, spkr, txt] = timestampMatch;
+          const [min, sec] = time.split(':').map(Number);
+          speaker = spkr.trim() || 'Unknown';
+          content = txt.trim();
+          timestampSec = isNaN(min) || isNaN(sec) ? syntheticTimestamp++ : min * 60 + sec;
+        } else if (line.match(/^Speaker\s*\d*/i)) {
+          // Line starts with "Speaker" or "Speaker N"
+          speaker = line.match(/^Speaker\s*(\d*)/i)[0].trim();
+          content = line.replace(/^Speaker\s*\d*\s*/i, '').trim();
+          timestampSec = syntheticTimestamp++;
+          if (speaker === 'Speaker' && lastSpeaker && content.length < 20 && contributions.length > 0) {
+            // Heuristic: Short "Speaker" line after a known speaker might be a continuation
+            contributions[contributions.length - 1].text += ' ' + content;
+            return;
+          }
+        } else if (lastSpeaker && line.length < 20 && !line.match(/^[A-Z]/)) {
+          // Short line without speaker, likely a continuation
+          contributions[contributions.length - 1].text += ' ' + line;
+          return;
+        } else {
+          // Fallback: Treat as Unknown speaker
+          speaker = 'Unknown';
+          content = line;
+          timestampSec = syntheticTimestamp++;
+          console.warn(`Line ${i + 1} lacks speaker or format, assigned as Unknown: ${line}`);
+        }
+
+        contributions.push({ speaker, text: content, lineNum: i + 1, timestampSec });
+        lastSpeaker = speaker;
+      });
+
+      return contributions.filter(c => c.text.length > 0);
+    }
+
+    function analyzeContributions(contributions) {
+      if (!contributions.length) throw new Error('No contributions to analyze.');
+      const totalLines = contributions.length;
+      const speakerStats = {};
+      const wordFreq = {};
+      const thresholds = {
+        dominance: parseInt(document.getElementById('dominance-threshold').value) || 40,
+        inclusion: parseInt(document.getElementById('inclusion-threshold').value) || 5,
+        groupthink: parseInt(document.getElementById('groupthink-threshold').value) || 3,
+        interrupt: parseInt(document.getElementById('interrupt-threshold').value) || 2
+      };
+      const customRules = parseCustomRules();
+
+      contributions.forEach(c => {
+        speakerStats[c.speaker] = speakerStats[c.speaker] || { count: 0, words: 0 };
+        speakerStats[c.speaker].count += 1;
+        const words = c.text.split(/\s+/).filter(w => w.length > 2); // Filter short noise
+        speakerStats[c.speaker].words += words.length;
+        words.forEach(w => {
+          if (w.length > 3) wordFreq[w.toLowerCase()] = (wordFreq[w.toLowerCase()] || 0) + 1;
+        });
+      });
+
+      const flags = [];
+      for (const [speaker, stats] of Object.entries(speakerStats)) {
+        const percent = (stats.count / totalLines) * 100;
+        if (percent > thresholds.dominance) flags.push({ type: 'Dominance', message: `${speaker} dominated (${Math.round(percent)}%).`, tip: 'Pause for others.', summary: true });
+        if (percent < thresholds.inclusion && totalLines > 10) flags.push({ type: 'Inclusion', message: `${speaker} under-contributed (${Math.round(percent)}%).`, tip: `Invite ${speaker}.`, summary: true });
+      }
+
+      let agreementCount = 0;
+      contributions.forEach((c, i) => {
+        const textLower = c.text.toLowerCase();
+        if (textLower.includes('agree') || textLower.includes('same')) {
+          agreementCount++;
+          if (agreementCount > thresholds.groupthink) flags.push({ type: 'Groupthink', message: `Line ${c.lineNum}: Too much agreement.`, tip: 'Seek diverse views.', line: c.lineNum });
+        }
+        if (textLower.match(/\b(never|always|waste)\b/) || (window.nlp && window.nlp(c.text).sentences().isNegative().out('array').length > 0)) {
+          flags.push({ type: 'Tone', message: `Line ${c.lineNum}: Negative tone.`, tip: 'Rephrase positively.', line: c.lineNum });
+        }
+        if (i > 0 && (c.timestampSec - contributions[i-1].timestampSec) <= thresholds.interrupt && c.speaker !== contributions[i-1].speaker) {
+          flags.push({ type: 'Interruption', message: `Line ${c.lineNum}: Possible interruption of ${contributions[i-1].speaker}.`, tip: 'Let others finish.', line: c.lineNum });
+        }
+        customRules.forEach(rule => {
+          const regex = rule.keyword.startsWith('/') ? new RegExp(rule.keyword.slice(1, -1), 'i') : new RegExp(`\\b${rule.keyword}\\b`, 'i');
+          if (regex.test(textLower)) flags.push({ type: `Custom (${rule.severity})`, message: `Line ${c.lineNum}: ${rule.message}`, tip: 'Review this.', line: c.lineNum });
+        });
+      });
+
+      const collabMetrics = {
+        turnTaking: contributions.slice(1).filter((c, i) => c.speaker !== contributions[i].speaker).length / (totalLines - 1) || 0,
+        interruptions: flags.filter(f => f.type === 'Interruption').length,
+        balance: Math.max(0, 100 - (Math.max(...Object.values(speakerStats).map(s => s.count)) / totalLines * 100 - thresholds.dominance))
+      };
+
+      const lang = window.franc ? franc(contributions.map(c => c.text).join(' '), { minLength: 10 }) === 'spa' ? 'Spanish' : 'English' : 'Unknown (language detection unavailable)';
+      const summary = `${flags.filter(f => f.summary).map(f => f.message).join(' ') || 'No major biases.'} | Language: ${lang}`;
+      return { summary, flags, speakerStats, wordFreq, collabMetrics, text: contributions.map(c => c.text).join(' ') };
+    }
+
+    function parseCustomRules() {
+      const rulesText = document.getElementById('custom-rules').value.trim();
+      if (!rulesText) return [];
+      return rulesText.split('\n').map(line => {
+        try {
+          const [keySeverity, message] = line.split('=').map(s => s.trim());
+          const [keyword, severity] = keySeverity.split(':');
+          return { keyword, severity: severity || 'warning', message: message || 'Custom flag detected' };
+        } catch (error) {
+          console.warn('Invalid custom rule:', line, error);
+          return null;
+        }
+      }).filter(rule => rule);
+    }
+
+    function displayResults(analysis, contributions) {
+      console.log('Displaying results:', analysis);
+      document.getElementById('results-section').style.display = 'block';
+      document.getElementById('summary').innerHTML = analysis.summary;
+      document.getElementById('summary-content').classList.add('active');
+
+      let transcriptHTML = '';
+      contributions.forEach(c => {
+        const lineFlags = analysis.flags.filter(f => f.line === c.lineNum);
+        const flagText = lineFlags.length ? `<span class="flag">[${lineFlags.map(f => `${f.message} <span class="tip">(${f.tip})</span>`).join('; ')}]</span>` : '';
+        transcriptHTML += `<div class="transcript-line">[${formatTime(c.timestampSec)}] ${c.speaker}: ${c.text}${flagText}</div>`;
+      });
+      document.getElementById('annotated-transcript').innerHTML = transcriptHTML;
+
+      if (window.Chart) drawChart(analysis.speakerStats);
+      else console.warn('Chart.js not loaded, skipping chart.');
+      drawKeywordCloud(analysis.wordFreq);
+      displayCollabMetrics(analysis.collabMetrics);
+      displayLanguageDetection(analysis.text);
+      displayHistoricalComparison(analysis);
+    }
+
+    function formatTime(seconds) {
+      const min = Math.floor(seconds / 60);
+      const sec = seconds % 60;
+      return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    function drawChart(speakerStats) {
+      if (chartInstance) chartInstance.destroy();
+      const ctx = document.getElementById('participation-chart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(speakerStats),
+          datasets: [{ data: Object.values(speakerStats).map(s => s.count), backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22'] }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: document.body.classList.contains('dark') ? '#ecf0f1' : '#333' } } } }
+      });
+    }
+
+    function drawKeywordCloud(wordFreq) {
+      const topWords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      document.getElementById('keyword-cloud').innerHTML = topWords.map(([word, freq]) => `<span style="font-size: ${Math.min(30, 12 + freq * 3)}px" title="${freq} occurrences">${word}</span>`).join('');
+    }
+
+    function displayCollabMetrics(metrics) {
+      document.getElementById('collab-metrics').innerHTML = `
+        Turn-taking: ${(metrics.turnTaking * 100).toFixed(1)}%<br>
+        Interruptions: ${metrics.interruptions}<br>
+        Speaker Balance: ${metrics.balance.toFixed(1)}/100
+      `;
+    }
+
+    function displayLanguageDetection(text) {
+      const lang = window.franc ? franc(text, { minLength: 10 }) === 'spa' ? 'Spanish' : 'English' : 'Unknown (language detection unavailable)';
+      const mockTranslation = lang === 'Spanish' ? text.replace(/el/g, 'the').substring(0, 50) + '...' : 'No translation needed.';
+      document.getElementById('language-detection').innerHTML = `Detected: ${lang}<br>Translation (mock): ${mockTranslation}<br><small>For full translation, integrate an API.</small>`;
+    }
+
+    function saveHistoricalData(analysis) {
+      let history;
+      try {
+        const stored = localStorage.getItem('equivoice_history');
+        history = stored ? JSON.parse(stored) : [];
+        if (!Array.isArray(history)) {
+          console.warn('Stored history is not an array, resetting to empty array.');
+          history = [];
+        }
+      } catch (error) {
+        console.error('Error parsing historical data from localStorage:', error);
+        history = [];
+      }
+
+      history.push({
+        timestamp: new Date().toISOString(),
+        summary: analysis.summary,
+        dominance: analysis.flags.some(f => f.type === 'Dominance'),
+        balance: analysis.collabMetrics.balance
+      });
+
+      if (history.length > 5) history.shift();
+      try {
+        localStorage.setItem('equivoice_history', JSON.stringify(history));
+        console.log('Saved historical data:', history);
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+    }
+
+    function displayHistoricalComparison(analysis) {
+      let history;
+      try {
+        history = JSON.parse(localStorage.getItem('equivoice_history') || '[]');
+        if (!Array.isArray(history)) throw new Error('History is not an array');
+      } catch (error) {
+        console.error('Error retrieving historical data:', error);
+        document.getElementById('historical-comparison').innerHTML = 'Error loading historical data.';
+        return;
+      }
+
+      if (history.length < 2) {
+        document.getElementById('historical-comparison').innerHTML = 'Not enough data for comparison.';
+        return;
+      }
+      const avgBalance = history.slice(0, -1).reduce((sum, h) => sum + h.balance, 0) / (history.length - 1);
+      const dominanceTrend = history.slice(0, -1).filter(h => h.dominance).length / (history.length - 1) > 0.5 ? 'more' : 'less';
+      document.getElementById('historical-comparison').innerHTML = `Compared to ${history.length - 1} past analyses:<br>
+        Avg. Balance: ${avgBalance.toFixed(1)} (Current: ${analysis.collabMetrics.balance.toFixed(1)})<br>
+        Dominance: ${dominanceTrend} frequent than past`;
+    }
+
+    function exportResults() {
+      if (!currentAnalysis || !currentContributions) return alert('No results to export.');
+      const { summary, flags } = currentAnalysis;
+      let exportText = `EquiVoice Analysis\n\nSummary: ${summary}\n\nTranscript:\n`;
+      currentContributions.forEach(c => {
+        const lineFlags = flags.filter(f => f.line === c.lineNum);
+        const flagText = lineFlags.length ? ` [${lineFlags.map(f => `${f.message} (${f.tip})`).join('; ')}]` : '';
+        exportText += `[${formatTime(c.timestampSec)}] ${c.speaker}: ${c.text}${flagText}\n`;
+      });
+      const blob = new Blob([exportText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'EquiVoice_Analysis.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function toggleCollapsible(id) {
+      const content = document.getElementById(id);
+      content.classList.toggle('active');
+    }
+  </script>
+</body>
+</html>
