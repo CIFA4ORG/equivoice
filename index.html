@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EquiVoice - Bias Detection with Theory of Mind</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     :root {
       --bg-light: #f4f7fa;
@@ -24,12 +25,13 @@
       max-width: 1200px;
       margin-left: auto;
       margin-right: auto;
-      background: var(--bg-light);
+      background: linear-gradient(135deg, var(--bg-light), #e8eef3);
       color: var(--text-light);
       transition: all 0.3s ease;
+      position: relative;
     }
     body.dark {
-      background: var(--bg-dark);
+      background: linear-gradient(135deg, var(--bg-dark), #34495e);
       color: var(--text-dark);
     }
     h1 {
@@ -37,6 +39,7 @@
       font-size: 2.5em;
       margin-bottom: 20px;
       color: var(--primary);
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
     }
     .section {
       background: white;
@@ -44,7 +47,9 @@
       padding: 20px;
       margin-bottom: 20px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
     }
     body.dark .section {
       background: #34495e;
@@ -52,6 +57,7 @@
     }
     .section:hover {
       transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
     button {
       padding: 10px 20px;
@@ -60,15 +66,18 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: background 0.3s, transform 0.2s;
     }
     button:hover {
       background: linear-gradient(45deg, #2980b9, var(--primary));
+      transform: scale(1.05);
     }
     button:disabled {
       background: #95a5a6;
       cursor: not-allowed;
+      transform: none;
     }
+    button i { margin-right: 5px; }
     textarea, input[type="text"], input[type="number"] {
       width: 100%;
       padding: 10px;
@@ -78,7 +87,7 @@
       box-sizing: border-box;
       background: #fff;
       color: var(--text-light);
-      transition: border-color 0.3s;
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
     textarea#paste-input {
       height: 200px;
@@ -86,8 +95,9 @@
       min-height: 100px;
       max-height: 400px;
     }
-    textarea:focus {
+    textarea:focus, input:focus {
       border-color: var(--primary);
+      box-shadow: 0 0 5px var(--primary);
       outline: none;
     }
     body.dark textarea, body.dark input {
@@ -95,8 +105,9 @@
       border-color: #5d6d7e;
       color: var(--text-dark);
     }
-    body.dark textarea:focus {
+    body.dark textarea:focus, body.dark input:focus {
       border-color: var(--accent);
+      box-shadow: 0 0 5px var(--accent);
     }
     .flag { color: var(--secondary); font-style: italic; }
     .tip { color: var(--accent); font-style: italic; }
@@ -104,29 +115,50 @@
     body.dark .summary { background: #3d566e; }
     .transcript-line { 
       margin: 5px 0; 
-      padding: 5px; 
+      padding: 8px; 
       border-bottom: 1px solid #eee; 
-      transition: background 0.3s;
+      transition: background 0.3s, transform 0.2s;
       cursor: pointer;
+      border-radius: 3px;
     }
     .transcript-line.stress-low { background: var(--stress-low); }
     .transcript-line.stress-mid { background: var(--stress-mid); }
     .transcript-line.stress-high { background: var(--stress-high); }
-    .transcript-line:hover { background: #ddd; }
+    .transcript-line:hover { 
+      background: #ddd; 
+      transform: translateX(5px);
+    }
     body.dark .transcript-line { border-color: #5d6d7e; }
     body.dark .transcript-line:hover { background: #4a6278; }
     #keyword-cloud span {
       display: inline-block;
       margin: 5px;
-      padding: 5px 10px;
+      padding: 6px 12px;
       background: linear-gradient(45deg, var(--primary), var(--accent));
       color: white;
-      border-radius: 15px;
+      border-radius: 20px;
       cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    #collab-radar { max-width: 300px; margin: 10px auto; }
-    .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-    #theme-toggle { position: fixed; top: 20px; right: 20px; }
+    #keyword-cloud span:hover { transform: scale(1.1); }
+    #collab-radar { max-width: 350px; margin: 20px auto; }
+    .settings { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+      gap: 15px; 
+      background: #f9f9f9; 
+      padding: 15px; 
+      border-radius: 5px; 
+    }
+    body.dark .settings { background: #3d566e; }
+    #theme-toggle { 
+      position: fixed; 
+      top: 20px; 
+      right: 20px; 
+      background: linear-gradient(45deg, #34495e, #2c3e50); 
+    }
+    body.dark #theme-toggle { background: linear-gradient(45deg, var(--accent), #27ae60); }
     .error-message { color: var(--secondary); display: none; margin-top: 10px; }
     #char-counter {
       font-size: 0.9em;
@@ -142,13 +174,23 @@
       #collab-radar { max-width: 200px; }
     }
     .guide-content ul {
-      list-style-type: disc;
-      padding-left: 20px;
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .guide-content li:before {
+      content: "\f058";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      color: var(--primary);
+      margin-right: 10px;
     }
     .guide-content h3 {
       margin-top: 15px;
       color: var(--primary);
+      display: flex;
+      align-items: center;
     }
+    .guide-content h3 i { margin-right: 10px; }
     #spinner {
       display: none;
       text-align: center;
@@ -156,18 +198,26 @@
       font-style: italic;
       color: var(--primary);
       z-index: 1000;
-      position: relative;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      pointer-events: none;
     }
+    body.dark #spinner { background: rgba(61, 86, 110, 0.9); }
     #spinner::after {
       content: '';
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid var(--primary);
+      display: block;
+      width: 30px;
+      height: 30px;
+      border: 4px solid var(--primary);
       border-top-color: transparent;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-left: 10px;
+      margin: 10px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .result-header {
@@ -177,7 +227,10 @@
       margin-bottom: 15px;
       border-bottom: 2px solid var(--primary);
       padding-bottom: 5px;
+      display: flex;
+      align-items: center;
     }
+    .result-header i { margin-right: 10px; }
     #load-sample-btn {
       background: linear-gradient(45deg, var(--accent), #27ae60);
       margin-bottom: 10px;
@@ -185,57 +238,73 @@
     #load-sample-btn:hover {
       background: linear-gradient(45deg, #27ae60, var(--accent));
     }
-    /* New style for success message */
     #success-message {
       display: none;
       text-align: center;
       color: var(--accent);
-      padding: 10px;
+      padding: 15px;
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       z-index: 1000;
       transition: opacity 0.5s ease;
+      font-weight: bold;
     }
-    body.dark #success-message { background: rgba(61, 86, 110, 0.9); }
+    body.dark #success-message { background: rgba(61, 86, 110, 0.95); }
+    .progress-bar {
+      width: 100%;
+      background: #eee;
+      border-radius: 5px;
+      height: 10px;
+      margin: 5px 0;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      transition: width 1s ease-in-out;
+    }
+    .progress-fill.low { background: var(--primary); }
+    .progress-fill.mid { background: #f1c40f; }
+    .progress-fill.high { background: var(--secondary); }
   </style>
 </head>
 <body>
-  <button id="theme-toggle">Toggle Dark Mode</button>
-  <h1>EquiVoice: Bias Detection with Theory of Mind</h1>
+  <button id="theme-toggle"><i class="fas fa-moon"></i> Toggle Dark Mode</button>
+  <h1><i class="fas fa-brain"></i> EquiVoice: Bias Detection with Theory of Mind</h1>
 
   <div class="section" id="guide-section">
-    <div class="result-header">User Guide</div>
+    <div class="result-header"><i class="fas fa-book"></i> User Guide</div>
     <div class="guide-content">
-      <h3>Welcome to EquiVoice</h3>
+      <h3><i class="fas fa-handshake"></i> Welcome to EquiVoice</h3>
       <p>Hello! I’m Azeez Hamzat, and EquiVoice is an experimental platform I’m developing as part of my research. My goal is to explore the best ways to enhance collective intelligence (CI) and minimize biases in heterogeneous group discussions. With features like the MindSync Index powered by Theory of Mind, this tool is a work in progress—your feedback is invaluable as I refine it!</p>
       
-      <h3>How to Use</h3>
+      <h3><i class="fas fa-info-circle"></i> How to Use</h3>
       <ul>
-        <li><strong>Upload a File</strong>: Select a .txt file in "Upload" and click "Analyze File."</li>
-        <li><strong>Paste Text</strong>: Enter your transcript in "Paste" (resize it!) and click "Analyze Text."</li>
-        <li><strong>Try a Sample</strong>: Click "Load Sample Transcript" to test with a preloaded meeting transcript.</li>
-        <li><strong>Customize Settings</strong>: Adjust thresholds or add rules (e.g., "!:warning = Excitement").</li>
-        <li><strong>View Results</strong>: Check "Collaboration Metrics" for MindSync and "ToM Insights" for tips.</li>
-        <li><strong>Export</strong>: Click "Export as .txt" in Summary.</li>
+        <li>Upload a File: Select a .txt file in "Upload" and click "Analyze File."</li>
+        <li>Paste Text: Enter your transcript in "Paste" (resize it!) and click "Analyze Text."</li>
+        <li>Try a Sample: Click "Load Sample Transcript" to test with a preloaded meeting transcript.</li>
+        <li>Customize Settings: Adjust thresholds or add rules (e.g., "!:warning = Excitement").</li>
+        <li>View Results: Check "Collaboration Metrics" for MindSync and "ToM Insights" for tips.</li>
+        <li>Export: Click "Export as .txt" in Summary.</li>
       </ul>
 
-      <h3>Understanding Results</h3>
+      <h3><i class="fas fa-chart-bar"></i> Understanding Results</h3>
       <ul>
-        <li><strong>Summary</strong>: Key findings, stress count, and MindSync.</li>
-        <li><strong>Voice Stress Detector</strong>: Stress stats (low/mid/high).</li>
-        <li><strong>Keyword Cloud</strong>: Frequent words, sized by occurrence.</li>
-        <li><strong>Collaboration Metrics</strong>: Team Harmony Score + MindSync Index, with a radar chart.</li>
-        <li><strong>ToM Insights</strong>: Inferred mental states and empathy tips.</li>
-        <li><strong>Language & Translation</strong>: Detected language with mock translation.</li>
-        <li><strong>Historical Comparison</strong>: Trends including MindSync.</li>
-        <li><strong>Annotated Transcript</strong>: Text with flags, tips, stress heatmap, and hover sounds.</li>
+        <li>Summary: Key findings, stress count, and MindSync.</li>
+        <li>Voice Stress Detector: Stress stats (low/mid/high).</li>
+        <li>Keyword Cloud: Frequent words, sized by occurrence.</li>
+        <li>Collaboration Metrics: Team Harmony Score + MindSync Index, with a radar chart.</li>
+        <li>ToM Insights: Inferred mental states and empathy tips.</li>
+        <li>Language & Translation: Detected language with mock translation.</li>
+        <li>Historical Comparison: Trends including MindSync.</li>
+        <li>Annotated Transcript: Text with flags, tips, stress heatmap, and hover sounds.</li>
       </ul>
 
-      <h3>Tips</h3>
+      <h3><i class="fas fa-lightbulb"></i> Tips</h3>
       <ul>
         <li>Stress highlights: Blue (low), Yellow (mid), Red (high).</li>
         <li>Hover over stressed lines for sound effects.</li>
@@ -246,23 +315,23 @@
   </div>
   
   <div class="section" id="upload-section">
-    <p>Upload a meeting transcript (.txt)</p>
+    <p><i class="fas fa-upload"></i> Upload a meeting transcript (.txt)</p>
     <input type="file" id="upload" accept=".txt">
-    <button id="analyze-file-btn">Analyze File</button>
+    <button id="analyze-file-btn"><i class="fas fa-play"></i> Analyze File</button>
     <div id="upload-error" class="error-message"></div>
   </div>
   
   <div class="section" id="paste-section">
-    <p>Paste your transcript below</p>
-    <button id="load-sample-btn">Load Sample Transcript</button>
+    <p><i class="fas fa-paste"></i> Paste your transcript below</p>
+    <button id="load-sample-btn"><i class="fas fa-file-alt"></i> Load Sample Transcript</button>
     <textarea id="paste-input" placeholder="e.g., Speaker 1\nYES!!!"></textarea>
     <div id="char-counter">Characters: 0</div>
-    <button id="analyze-text-btn">Analyze Text</button>
+    <button id="analyze-text-btn"><i class="fas fa-play"></i> Analyze Text</button>
     <div id="paste-error" class="error-message"></div>
   </div>
   
   <div class="section" id="settings-section">
-    <p>Customize Detection Thresholds</p>
+    <p><i class="fas fa-cogs"></i> Customize Detection Thresholds</p>
     <div class="settings">
       <label>Dominance (%): <input type="number" id="dominance-threshold" value="40" min="10" max="90"></label>
       <label>Inclusion (%): <input type="number" id="inclusion-threshold" value="5" min="1" max="20"></label>
@@ -272,51 +341,52 @@
   </div>
 
   <div class="section" id="custom-rules-section">
-    <p>Custom Bias Rules (e.g., "hate:warning = Negative tone", "!:warning = Excitement")</p>
+    <p><i class="fas fa-ruler"></i> Custom Bias Rules (e.g., "hate:warning = Negative tone", "!:warning = Excitement")</p>
     <textarea id="custom-rules" placeholder="keyword:severity = message"></textarea>
   </div>
   
   <div id="spinner">Analyzing...</div>
 
   <div class="section" id="results-section" style="display: none;">
-    <div class="result-header">Summary</div>
+    <div class="result-header"><i class="fas fa-list"></i> Summary</div>
     <div id="summary-content">
       <div id="summary" class="summary"></div>
-      <button id="export-btn">Export as .txt</button>
+      <button id="export-btn"><i class="fas fa-download"></i> Export as .txt</button>
     </div>
     
-    <div class="result-header">Voice Stress Detector</div>
+    <div class="result-header"><i class="fas fa-volume-up"></i> Voice Stress Detector</div>
     <div id="stress-content">
       <div id="stress-stats"></div>
     </div>
     
-    <div class="result-header">Keyword Cloud</div>
+    <div class="result-header"><i class="fas fa-cloud"></i> Keyword Cloud</div>
     <div id="keyword-content">
       <div id="keyword-cloud"></div>
     </div>
     
-    <div class="result-header">Collaboration Metrics</div>
+    <div class="result-header"><i class="fas fa-users"></i> Collaboration Metrics</div>
     <div id="collab-content">
       <div id="collab-metrics"></div>
       <div id="collab-radar"><canvas id="radar-chart"></canvas></div>
     </div>
     
-    <div class="result-header">ToM Insights</div>
+    <div class="result-header"><i class="fas fa-brain"></i> ToM Insights</div>
     <div id="tom-content">
       <div id="tom-insights"></div>
     </div>
     
-    <div class="result-header">Language & Translation</div>
+    <div class="result-header"><i class="fas fa-language"></i> Language & Translation</div>
     <div id="lang-content">
       <div id="language-detection"></div>
     </div>
     
-    <div class="result-header">Historical Comparison</div>
+    <div class="result-header"><i class="fas fa-history"></i> Historical Comparison</div>
     <div id="history-content">
       <div id="historical-comparison"></div>
+      <canvas id="history-chart" style="max-width: 500px; margin: 20px auto;"></canvas>
     </div>
     
-    <div class="result-header">Annotated Transcript</div>
+    <div class="result-header"><i class="fas fa-file-alt"></i> Annotated Transcript</div>
     <div id="transcript-content">
       <div id="annotated-transcript"></div>
     </div>
@@ -325,11 +395,13 @@
   <script src="https://unpkg.com/compromise@14.11.0/builds/compromise.min.js" onerror="console.error('Compromise failed to load'); window.nlp = null;"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" onerror="console.error('Chart.js failed to load'); window.Chart = null;"></script>
   <script src="https://unpkg.com/franc-min@6.2.0/franc-min.js" onerror="console.error('Franc failed to load'); window.franc = null;"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
   <script>
     let currentAnalysis = null;
     let currentContributions = null;
     let radarChart = null;
+    let historyChart = null;
 
     const stressSounds = {
       low: new Audio('data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='),
@@ -337,13 +409,15 @@
       high: new Audio('data:audio/wav;base64,UklGRjwAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQEAAAABAA==')
     };
 
-    // Sample transcript
-    const sampleTranscript = `[00:01] Ember: I think we should go with the new strategy—what do you all think?\n[00:03] Stone: YES!!! I agree, let’s do it now.\n[00:04] Briar: Wait, Stone, I wasn’t done—can we discuss the risks first?\n[00:05] Stone: Sorry, Briar, go ahead.\n[00:07] Shade: I feel we’re rushing this… maybe we need more data?\n[00:09] Ember: Good point, Shade. Let’s slow down and understand everyone’s perspective.`;
+    const sampleTranscript = `[00:00] Rose: Okay, everyone, let’s get started. We’ve got a tight deadline for this project—two weeks to launch. I need updates from each of you. Tulip, you first.\n[00:10] Tulip: Uh, sure. I’ve been working on the designs, but I need more time! The client keeps changing their mind, and—\n[00:15] Rose: No excuses, we don’t have time! We need those designs by Friday.\n[00:18] Daisy: Wait, but I—\n[00:19] Rose: Hold on, Daisy. Tulip, can you commit to Friday or not?\n[00:22] Tulip: I… I’ll try, but it’s really tough! I’m already stressed out.\n[00:27] Orchid: I get that, Tulip. Maybe we can help? I can talk to the client to finalize their feedback.\n[00:32] Rose: Fine, Orchid, do that. Daisy, what about the dev side?\n[00:36] Daisy: I was trying to say—the backend isn’t ready! If Tulip’s designs aren’t done, I can’t start coding properly.\n[00:42] Rose: Ugh, this is a mess! We can’t keep delaying!\n[00:45] Tulip: I said I’m trying my best!!!\n[00:48] Orchid: Hey, let’s all calm down. Tulip, I hear you’re overwhelmed—let’s figure this out together.\n[00:54] Daisy: Yeah, I agree with Orchid. Maybe we can adjust the timeline a bit?\n[00:58] Rose: No way, the client won’t budge! We need to push harder.\n[01:02] Tulip: You always say that, but you’re not the one doing the work!\n[01:05] Orchid: Rose, maybe we should listen to Tulip—they’re clearly struggling.\n[01:09] Daisy: I can help Tulip with some mockups if that speeds things up.\n[01:13] Rose: Fine, do that. But we’re still aiming for Friday. Let’s wrap up—Orchid, update me on the client tomorrow.`;
 
     document.getElementById('analyze-file-btn').addEventListener('click', analyzeFile);
     document.getElementById('analyze-text-btn').addEventListener('click', analyzeText);
     document.getElementById('export-btn').addEventListener('click', exportResults);
-    document.getElementById('theme-toggle').addEventListener('click', () => document.body.classList.toggle('dark'));
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      updateChartColors();
+    });
     document.getElementById('load-sample-btn').addEventListener('click', loadSampleTranscript);
 
     const pasteInput = document.getElementById('paste-input');
@@ -366,7 +440,10 @@
 
     function toggleSpinner(show) {
       const spinner = document.getElementById('spinner');
-      const analyzeButtons = [document.getElementById('analyze-file-btn'), document.getElementById('analyze-text-btn')];
+      const analyzeButtons = [
+        document.getElementById('analyze-file-btn'),
+        document.getElementById('analyze-text-btn')
+      ];
       spinner.style.display = show ? 'block' : 'none';
       analyzeButtons.forEach(btn => btn.disabled = show);
     }
@@ -377,6 +454,11 @@
       successMsg.textContent = message;
       document.body.appendChild(successMsg);
       successMsg.style.display = 'block';
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
       setTimeout(() => {
         successMsg.style.opacity = '0';
         setTimeout(() => successMsg.remove(), 500);
@@ -407,15 +489,16 @@
     }
 
     function processTranscript(text) {
-      console.log('Processing transcript:', text.substring(0, 100) + '...');
+      console.time('processTranscript');
       const contributions = parseTranscript(text);
-      console.log('Parsed contributions:', contributions);
+      console.log('Parsed contributions:', contributions.length);
       const analysis = analyzeContributions(contributions);
-      console.log('Analysis result:', analysis);
+      console.log('Analysis complete:', analysis.summary);
       currentAnalysis = analysis;
       currentContributions = contributions;
       saveHistoricalData(analysis);
       displayResults(analysis, contributions);
+      console.timeEnd('processTranscript');
     }
 
     function analyzeText() {
@@ -424,17 +507,31 @@
         showError('paste-error', 'Please paste a transcript.');
         return;
       }
+
       const analyzeButton = document.getElementById('analyze-text-btn');
+      if (analyzeButton.disabled) return; // Prevent multiple clicks
+
       toggleSpinner(true);
       analyzeButton.disabled = true;
-      processTranscript(text);
-      toggleSpinner(false);
-      analyzeButton.disabled = false;
-      const resultsSection = document.getElementById('results-section');
-      if (resultsSection.style.display !== 'none') {
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        showSuccess('Analysis Complete! Scroll down for results.');
-      }
+
+      setTimeout(() => {
+        try {
+          processTranscript(text);
+          const resultsSection = document.getElementById('results-section');
+          resultsSection.style.display = 'block'; // Ensure visibility before scroll
+
+          setTimeout(() => {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            showSuccess('Analysis Complete! Scroll down for results.');
+          }, 100); // Delay scroll to ensure DOM updates
+        } catch (error) {
+          console.error('Error in analyzeText:', error);
+          showError('paste-error', 'Analysis failed: ' + error.message);
+        } finally {
+          toggleSpinner(false);
+          analyzeButton.disabled = false;
+        }
+      }, 0); // Push to next event loop
     }
 
     function parseTranscript(text) {
@@ -683,9 +780,12 @@
       const total = stressData.low + stressData.mid + stressData.high;
       document.getElementById('stress-stats').innerHTML = `
         Stressful Moments: ${total}<br>
-        Low (calm tension): ${stressData.low} (${total ? Math.round(stressData.low / total * 100) : 0}%)<br>
-        Medium (raised voices): ${stressData.mid} (${total ? Math.round(stressData.mid / total * 100) : 0}%)<br>
-        High (heated): ${stressData.high} (${total ? Math.round(stressData.high / total * 100) : 0}%)<br>
+        Low (calm tension): ${stressData.low} (${total ? Math.round(stressData.low / total * 100) : 0}%)
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${total ? (stressData.low / total * 100) : 0}%"></div></div>
+        Medium (raised voices): ${stressData.mid} (${total ? Math.round(stressData.mid / total * 100) : 0}%)
+        <div class="progress-bar"><div class="progress-fill mid" style="width: ${total ? (stressData.mid / total * 100) : 0}%"></div></div>
+        High (heated): ${stressData.high} (${total ? Math.round(stressData.high / total * 100) : 0}%)
+        <div class="progress-bar"><div class="progress-fill high" style="width: ${total ? (stressData.high / total * 100) : 0}%"></div></div>
         <small>Hover over stressed lines for sound effects!</small>
       `;
     }
@@ -697,13 +797,19 @@
 
     function displayCollabMetrics(metrics) {
       document.getElementById('collab-metrics').innerHTML = `
-        <strong>Team Harmony Score: ${metrics.teamHarmonyScore}/100</strong><br>
-        Turn-taking: ${(metrics.turnTaking * 100).toFixed(1)}%<br>
+        <strong>Team Harmony Score: ${metrics.teamHarmonyScore}/100</strong>
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${metrics.teamHarmonyScore}%"></div></div>
+        Turn-taking: ${(metrics.turnTaking * 100).toFixed(1)}%
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${metrics.turnTaking * 100}%"></div></div>
         Interruptions: ${metrics.interruptions}<br>
-        Speaker Balance: ${metrics.balance.toFixed(1)}/100<br>
-        Stress Impact: ${metrics.stressImpact.toFixed(1)}/100<br>
-        Engagement Diversity: ${metrics.engagementDiversity.toFixed(1)}/100<br>
+        Speaker Balance: ${metrics.balance.toFixed(1)}/100
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${metrics.balance}%"></div></div>
+        Stress Impact: ${metrics.stressImpact.toFixed(1)}/100
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${metrics.stressImpact}%"></div></div>
+        Engagement Diversity: ${metrics.engagementDiversity.toFixed(1)}/100
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${metrics.engagementDiversity}%"></div></div>
         MindSync Index: ${metrics.mindSync}/100
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${metrics.mindSync}%"></div></div>
       `;
       if (window.Chart) drawRadarChart(metrics);
       else console.warn('Chart.js not loaded, skipping radar chart.');
@@ -754,7 +860,8 @@
         ? tomData.insights.map(t => `${t.lineNum ? `Line ${t.lineNum}: ` : ''}${t.message} <span class="tip">(${t.tip})</span>`).join('<br>')
         : 'No clear Theory of Mind cues detected—team may need to connect more.';
       document.getElementById('tom-insights').innerHTML = `
-        <strong>MindSync Index: ${tomData.mindSyncScore}/100</strong><br>
+        <strong>MindSync Index: ${tomData.mindSyncScore}/100</strong>
+        <div class="progress-bar"><div class="progress-fill low" style="width: ${tomData.mindSyncScore}%"></div></div>
         ${insightsHTML}
       `;
     }
@@ -823,6 +930,72 @@
         Avg. Team Harmony: ${avgHarmony.toFixed(1)} (Current: ${analysis.collabMetrics.teamHarmonyScore})<br>
         Avg. MindSync: ${avgMindSync.toFixed(1)} (Current: ${analysis.collabMetrics.mindSync})<br>
         Dominance: ${dominanceTrend} frequent than past`;
+      if (window.Chart) drawHistoryChart(history);
+    }
+
+    function drawHistoryChart(history) {
+      if (historyChart) historyChart.destroy();
+      const ctx = document.getElementById('history-chart').getContext('2d');
+      const labels = history.map(h => new Date(h.timestamp).toLocaleDateString());
+      const harmonyData = history.map(h => h.teamHarmonyScore);
+      const mindSyncData = history.map(h => h.mindSyncScore);
+      historyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Team Harmony',
+              data: harmonyData,
+              backgroundColor: 'rgba(52, 152, 219, 0.6)',
+              borderColor: 'rgba(52, 152, 219, 1)',
+              borderWidth: 1
+            },
+            {
+              label: 'MindSync',
+              data: mindSyncData,
+              backgroundColor: 'rgba(46, 204, 113, 0.6)',
+              borderColor: 'rgba(46, 204, 113, 1)',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { color: document.body.classList.contains('dark') ? '#ecf0f1' : '#333' },
+              grid: { color: document.body.classList.contains('dark') ? '#5d6d7e' : '#ddd' }
+            },
+            x: {
+              ticks: { color: document.body.classList.contains('dark') ? '#ecf0f1' : '#333' },
+              grid: { display: false }
+            }
+          },
+          plugins: {
+            legend: { position: 'top', labels: { color: document.body.classList.contains('dark') ? '#ecf0f1' : '#333' } }
+          }
+        }
+      });
+    }
+
+    function updateChartColors() {
+      if (radarChart) {
+        radarChart.options.scales.r.ticks.color = document.body.classList.contains('dark') ? '#ecf0f1' : '#333';
+        radarChart.options.scales.r.grid.color = document.body.classList.contains('dark') ? '#5d6d7e' : '#ddd';
+        radarChart.options.scales.r.pointLabels.color = document.body.classList.contains('dark') ? '#ecf0f1' : '#333';
+        radarChart.options.plugins.legend.labels.color = document.body.classList.contains('dark') ? '#ecf0f1' : '#333';
+        radarChart.update();
+      }
+      if (historyChart) {
+        historyChart.options.scales.y.ticks.color = document.body.classList.contains('dark') ? '#ecf0f1' : '#333';
+        historyChart.options.scales.y.grid.color = document.body.classList.contains('dark') ? '#5d6d7e' : '#ddd';
+        historyChart.options.scales.x.ticks.color = document.body.classList.contains('dark') ? '#ecf0f1' : '#333';
+        historyChart.options.plugins.legend.labels.color = document.body.classList.contains('dark') ? '#ecf0f1' : '#333';
+        historyChart.update();
+      }
     }
 
     function exportResults() {
