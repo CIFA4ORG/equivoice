@@ -115,24 +115,6 @@
     .transcript-line:hover { background: #ddd; }
     body.dark .transcript-line { border-color: #5d6d7e; }
     body.dark .transcript-line:hover { background: #4a6278; }
-    .collapsible-header {
-      cursor: pointer;
-      padding: 10px;
-      background: var(--primary);
-      color: white;
-      border-radius: 5px 5px 0 0;
-      margin: 10px 0 0;
-    }
-    .collapsible-content {
-      display: none;
-      padding: 10px;
-      border: 1px solid var(--primary);
-      border-top: none;
-      border-radius: 0 0 5px 5px;
-      background: #fff;
-    }
-    body.dark .collapsible-content { background: #34495e; }
-    .collapsible-content.active { display: block; }
     #keyword-cloud span {
       display: inline-block;
       margin: 5px;
@@ -173,6 +155,8 @@
       padding: 20px;
       font-style: italic;
       color: var(--primary);
+      z-index: 1000;
+      position: relative;
     }
     #spinner::after {
       content: '';
@@ -186,6 +170,37 @@
       margin-left: 10px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .result-header {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 5px;
+    }
+    #load-sample-btn {
+      background: linear-gradient(45deg, var(--accent), #27ae60);
+      margin-bottom: 10px;
+    }
+    #load-sample-btn:hover {
+      background: linear-gradient(45deg, #27ae60, var(--accent));
+    }
+    /* New style for success message */
+    #success-message {
+      display: none;
+      text-align: center;
+      color: var(--accent);
+      padding: 10px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 5px;
+      z-index: 1000;
+      transition: opacity 0.5s ease;
+    }
+    body.dark #success-message { background: rgba(61, 86, 110, 0.9); }
   </style>
 </head>
 <body>
@@ -193,41 +208,40 @@
   <h1>EquiVoice: Bias Detection with Theory of Mind</h1>
 
   <div class="section" id="guide-section">
-    <div class="collapsible-header" onclick="toggleCollapsible('guide-content')">User Guide</div>
-    <div id="guide-content" class="collapsible-content active">
-      <div class="guide-content">
-        <h3>Welcome to EquiVoice</h3>
-<p>Hello! I’m Azeez Hamzat, and EquiVoice is an experimental platform I’m developing as part of my research. My goal is to explore the best ways to enhance collective intelligence (CI) and minimize biases in heterogeneous group discussions. With features like the MindSync Index powered by Theory of Mind, this tool is a work in progress—your feedback is invaluable as I refine it!</p>
-        
-        <h3>How to Use</h3>
-        <ul>
-          <li><strong>Upload a File</strong>: Select a .txt file in "Upload" and click "Analyze File."</li>
-          <li><strong>Paste Text</strong>: Enter your transcript in "Paste" (resize it!) and click "Analyze Text."</li>
-          <li><strong>Customize Settings</strong>: Adjust thresholds or add rules (e.g., "!:warning = Excitement").</li>
-          <li><strong>View Results</strong>: Check "Collaboration Metrics" for MindSync and "ToM Insights" for tips.</li>
-          <li><strong>Export</strong>: Click "Export as .txt" in Summary.</li>
-        </ul>
+    <div class="result-header">User Guide</div>
+    <div class="guide-content">
+      <h3>Welcome to EquiVoice</h3>
+      <p>Hello! I’m Azeez Hamzat, and EquiVoice is an experimental platform I’m developing as part of my research. My goal is to explore the best ways to enhance collective intelligence (CI) and minimize biases in heterogeneous group discussions. With features like the MindSync Index powered by Theory of Mind, this tool is a work in progress—your feedback is invaluable as I refine it!</p>
+      
+      <h3>How to Use</h3>
+      <ul>
+        <li><strong>Upload a File</strong>: Select a .txt file in "Upload" and click "Analyze File."</li>
+        <li><strong>Paste Text</strong>: Enter your transcript in "Paste" (resize it!) and click "Analyze Text."</li>
+        <li><strong>Try a Sample</strong>: Click "Load Sample Transcript" to test with a preloaded meeting transcript.</li>
+        <li><strong>Customize Settings</strong>: Adjust thresholds or add rules (e.g., "!:warning = Excitement").</li>
+        <li><strong>View Results</strong>: Check "Collaboration Metrics" for MindSync and "ToM Insights" for tips.</li>
+        <li><strong>Export</strong>: Click "Export as .txt" in Summary.</li>
+      </ul>
 
-        <h3>Understanding Results</h3>
-        <ul>
-          <li><strong>Summary</strong>: Key findings, stress count, and MindSync.</li>
-          <li><strong>Voice Stress Detector</strong>: Stress stats (low/mid/high).</li>
-          <li><strong>Keyword Cloud</strong>: Frequent words, sized by occurrence.</li>
-          <li><strong>Collaboration Metrics</strong>: Team Harmony Score + MindSync Index, with a radar chart.</li>
-          <li><strong>ToM Insights</strong>: Inferred mental states and empathy tips.</li>
-          <li><strong>Language & Translation</strong>: Detected language with mock translation.</li>
-          <li><strong>Historical Comparison</strong>: Trends including MindSync.</li>
-          <li><strong>Annotated Transcript</strong>: Text with flags, tips, stress heatmap, and hover sounds.</li>
-        </ul>
+      <h3>Understanding Results</h3>
+      <ul>
+        <li><strong>Summary</strong>: Key findings, stress count, and MindSync.</li>
+        <li><strong>Voice Stress Detector</strong>: Stress stats (low/mid/high).</li>
+        <li><strong>Keyword Cloud</strong>: Frequent words, sized by occurrence.</li>
+        <li><strong>Collaboration Metrics</strong>: Team Harmony Score + MindSync Index, with a radar chart.</li>
+        <li><strong>ToM Insights</strong>: Inferred mental states and empathy tips.</li>
+        <li><strong>Language & Translation</strong>: Detected language with mock translation.</li>
+        <li><strong>Historical Comparison</strong>: Trends including MindSync.</li>
+        <li><strong>Annotated Transcript</strong>: Text with flags, tips, stress heatmap, and hover sounds.</li>
+      </ul>
 
-        <h3>Tips</h3>
-        <ul>
-          <li>Stress highlights: Blue (low), Yellow (mid), Red (high).</li>
-          <li>Hover over stressed lines for sound effects.</li>
-          <li>Drag the transcript box—see character count live!</li>
-          <li>MindSync high? Team’s in tune. Low? Check ToM Insights.</li>
-        </ul>
-      </div>
+      <h3>Tips</h3>
+      <ul>
+        <li>Stress highlights: Blue (low), Yellow (mid), Red (high).</li>
+        <li>Hover over stressed lines for sound effects.</li>
+        <li>Drag the transcript box—see character count live!</li>
+        <li>MindSync high? Team’s in tune. Low? Check ToM Insights.</li>
+      </ul>
     </div>
   </div>
   
@@ -240,6 +254,7 @@
   
   <div class="section" id="paste-section">
     <p>Paste your transcript below</p>
+    <button id="load-sample-btn">Load Sample Transcript</button>
     <textarea id="paste-input" placeholder="e.g., Speaker 1\nYES!!!"></textarea>
     <div id="char-counter">Characters: 0</div>
     <button id="analyze-text-btn">Analyze Text</button>
@@ -264,45 +279,45 @@
   <div id="spinner">Analyzing...</div>
 
   <div class="section" id="results-section" style="display: none;">
-    <div class="collapsible-header" onclick="toggleCollapsible('summary-content')">Summary</div>
-    <div id="summary-content" class="collapsible-content">
+    <div class="result-header">Summary</div>
+    <div id="summary-content">
       <div id="summary" class="summary"></div>
       <button id="export-btn">Export as .txt</button>
     </div>
     
-    <div class="collapsible-header" onclick="toggleCollapsible('stress-content')">Voice Stress Detector</div>
-    <div id="stress-content" class="collapsible-content">
+    <div class="result-header">Voice Stress Detector</div>
+    <div id="stress-content">
       <div id="stress-stats"></div>
     </div>
     
-    <div class="collapsible-header" onclick="toggleCollapsible('keyword-content')">Keyword Cloud</div>
-    <div id="keyword-content" class="collapsible-content">
+    <div class="result-header">Keyword Cloud</div>
+    <div id="keyword-content">
       <div id="keyword-cloud"></div>
     </div>
     
-    <div class="collapsible-header" onclick="toggleCollapsible('collab-content')">Collaboration Metrics</div>
-    <div id="collab-content" class="collapsible-content">
+    <div class="result-header">Collaboration Metrics</div>
+    <div id="collab-content">
       <div id="collab-metrics"></div>
       <div id="collab-radar"><canvas id="radar-chart"></canvas></div>
     </div>
     
-    <div class="collapsible-header" onclick="toggleCollapsible('tom-content')">ToM Insights</div>
-    <div id="tom-content" class="collapsible-content">
+    <div class="result-header">ToM Insights</div>
+    <div id="tom-content">
       <div id="tom-insights"></div>
     </div>
     
-    <div class="collapsible-header" onclick="toggleCollapsible('lang-content')">Language & Translation</div>
-    <div id="lang-content" class="collapsible-content">
+    <div class="result-header">Language & Translation</div>
+    <div id="lang-content">
       <div id="language-detection"></div>
     </div>
     
-    <div class="collapsible-header" onclick="toggleCollapsible('history-content')">Historical Comparison</div>
-    <div id="history-content" class="collapsible-content">
+    <div class="result-header">Historical Comparison</div>
+    <div id="history-content">
       <div id="historical-comparison"></div>
     </div>
     
-    <div class="collapsible-header" onclick="toggleCollapsible('transcript-content')">Annotated Transcript</div>
-    <div id="transcript-content" class="collapsible-content">
+    <div class="result-header">Annotated Transcript</div>
+    <div id="transcript-content">
       <div id="annotated-transcript"></div>
     </div>
   </div>
@@ -322,16 +337,25 @@
       high: new Audio('data:audio/wav;base64,UklGRjwAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQEAAAABAA==')
     };
 
+    // Sample transcript
+    const sampleTranscript = `[00:01] Ember: I think we should go with the new strategy—what do you all think?\n[00:03] Stone: YES!!! I agree, let’s do it now.\n[00:04] Briar: Wait, Stone, I wasn’t done—can we discuss the risks first?\n[00:05] Stone: Sorry, Briar, go ahead.\n[00:07] Shade: I feel we’re rushing this… maybe we need more data?\n[00:09] Ember: Good point, Shade. Let’s slow down and understand everyone’s perspective.`;
+
     document.getElementById('analyze-file-btn').addEventListener('click', analyzeFile);
     document.getElementById('analyze-text-btn').addEventListener('click', analyzeText);
     document.getElementById('export-btn').addEventListener('click', exportResults);
     document.getElementById('theme-toggle').addEventListener('click', () => document.body.classList.toggle('dark'));
+    document.getElementById('load-sample-btn').addEventListener('click', loadSampleTranscript);
 
     const pasteInput = document.getElementById('paste-input');
     const charCounter = document.getElementById('char-counter');
     pasteInput.addEventListener('input', () => {
       charCounter.textContent = `Characters: ${pasteInput.value.length}`;
     });
+
+    function loadSampleTranscript() {
+      pasteInput.value = sampleTranscript;
+      charCounter.textContent = `Characters: ${sampleTranscript.length}`;
+    }
 
     function showError(elementId, message) {
       const errorDiv = document.getElementById(elementId);
@@ -345,6 +369,18 @@
       const analyzeButtons = [document.getElementById('analyze-file-btn'), document.getElementById('analyze-text-btn')];
       spinner.style.display = show ? 'block' : 'none';
       analyzeButtons.forEach(btn => btn.disabled = show);
+    }
+
+    function showSuccess(message) {
+      const successMsg = document.createElement('div');
+      successMsg.id = 'success-message';
+      successMsg.textContent = message;
+      document.body.appendChild(successMsg);
+      successMsg.style.display = 'block';
+      setTimeout(() => {
+        successMsg.style.opacity = '0';
+        setTimeout(() => successMsg.remove(), 500);
+      }, 2000);
     }
 
     function analyzeFile() {
@@ -370,20 +406,6 @@
       reader.readAsText(file);
     }
 
-    function analyzeText() {
-      const text = pasteInput.value.trim();
-      if (!text) return showError('paste-error', 'Please paste a transcript.');
-      toggleSpinner(true);
-      try {
-        processTranscript(text);
-      } catch (error) {
-        console.error('Text processing error:', error);
-        showError('paste-error', error.message);
-      } finally {
-        toggleSpinner(false);
-      }
-    }
-
     function processTranscript(text) {
       console.log('Processing transcript:', text.substring(0, 100) + '...');
       const contributions = parseTranscript(text);
@@ -394,6 +416,25 @@
       currentContributions = contributions;
       saveHistoricalData(analysis);
       displayResults(analysis, contributions);
+    }
+
+    function analyzeText() {
+      const text = pasteInput.value.trim();
+      if (!text) {
+        showError('paste-error', 'Please paste a transcript.');
+        return;
+      }
+      const analyzeButton = document.getElementById('analyze-text-btn');
+      toggleSpinner(true);
+      analyzeButton.disabled = true;
+      processTranscript(text);
+      toggleSpinner(false);
+      analyzeButton.disabled = false;
+      const resultsSection = document.getElementById('results-section');
+      if (resultsSection.style.display !== 'none') {
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showSuccess('Analysis Complete! Scroll down for results.');
+      }
     }
 
     function parseTranscript(text) {
@@ -440,21 +481,25 @@
     }
 
     function analyzeContributions(contributions) {
-      if (!contributions.length) throw new Error('No contributions to analyze.');
+      if (!contributions || !Array.isArray(contributions) || contributions.length === 0) {
+        throw new Error('Invalid or empty contributions array. Please provide a valid transcript.');
+      }
+
       const totalLines = contributions.length;
       const speakerStats = {};
       const wordFreq = {};
       const stressData = { low: 0, mid: 0, high: 0, moments: [] };
       const tomData = { insights: [], mindSyncScore: 0 };
+
       const thresholds = {
-        dominance: parseInt(document.getElementById('dominance-threshold').value) || 40,
-        inclusion: parseInt(document.getElementById('inclusion-threshold').value) || 5,
-        groupthink: parseInt(document.getElementById('groupthink-threshold').value) || 3,
-        interrupt: parseInt(document.getElementById('interrupt-threshold').value) || 2
+        dominance: Math.max(10, Math.min(90, parseInt(document.getElementById('dominance-threshold').value) || 40)),
+        inclusion: Math.max(1, Math.min(20, parseInt(document.getElementById('inclusion-threshold').value) || 5)),
+        groupthink: Math.max(2, Math.min(10, parseInt(document.getElementById('groupthink-threshold').value) || 3)),
+        interrupt: Math.max(1, Math.min(10, parseInt(document.getElementById('interrupt-threshold').value) || 2))
       };
+
       const customRules = parseCustomRules();
 
-      // Basic stats and stress detection
       contributions.forEach((c, i) => {
         speakerStats[c.speaker] = speakerStats[c.speaker] || { count: 0, words: 0 };
         speakerStats[c.speaker].count += 1;
@@ -484,7 +529,6 @@
         if (stressLevel !== 'none') stressData.moments.push({ lineNum: c.lineNum, level: stressLevel, score: stressScore });
       });
 
-      // Theory of Mind Analysis
       let tomScore = 0;
       let tomInstances = 0;
       contributions.forEach((c, i) => {
@@ -492,7 +536,6 @@
         const prevText = i > 0 ? contributions[i-1].text.toLowerCase() : '';
         const prevSpeaker = i > 0 ? contributions[i-1].speaker : null;
 
-        // ToM Cues: Perspective-taking, empathy, intent recognition
         if (textLower.match(/\b(you|your|we|us|agree|understand|feel|think)\b/)) {
           tomScore += 1;
           tomInstances++;
@@ -514,9 +557,8 @@
           tomData.insights.push({ lineNum: c.lineNum, message: `${c.speaker} de-escalates stress: "${c.text}"`, tip: 'Great emotional attunement!' });
         }
       });
-      tomData.mindSyncScore = tomInstances ? Math.min(100, Math.round(tomScore / totalLines * 50)) : 50; // Default 50 if no ToM cues
+      tomData.mindSyncScore = tomInstances ? Math.min(100, Math.round(tomScore / totalLines * 50)) : 50;
 
-      // Flags
       const flags = [];
       for (const [speaker, stats] of Object.entries(speakerStats)) {
         const percent = (stats.count / totalLines) * 100;
@@ -551,10 +593,10 @@
         });
       });
 
-      // Enhanced Collaboration Metrics with ToM
       const turnTaking = contributions.slice(1).filter((c, i) => c.speaker !== contributions[i].speaker).length / (totalLines - 1) || 0;
       const interruptions = flags.filter(f => f.type === 'Interruption').length;
-      const balance = Math.max(0, 100 - (Math.max(...Object.values(speakerStats).map(s => s.count)) / totalLines * 100 - thresholds.dominance));
+      const maxContributionPercentage = (Math.max(...Object.values(speakerStats).map(s => s.count)) / totalLines) * 100;
+      const balance = Math.min(100, Math.max(0, 100 - (maxContributionPercentage - thresholds.dominance)));
       const stressImpact = 100 - ((stressData.low * 0.5 + stressData.mid * 1 + stressData.high * 2) / totalLines * 10);
       const engagementDiversity = calculateEngagementDiversity(speakerStats, totalLines);
       const mindSync = tomData.mindSyncScore;
@@ -601,7 +643,6 @@
       console.log('Displaying results:', analysis);
       document.getElementById('results-section').style.display = 'block';
       document.getElementById('summary').innerHTML = analysis.summary;
-      document.getElementById('summary-content').classList.add('active');
 
       let transcriptHTML = '';
       contributions.forEach(c => {
@@ -804,11 +845,6 @@
       a.download = 'EquiVoice_Analysis.txt';
       a.click();
       URL.revokeObjectURL(url);
-    }
-
-    function toggleCollapsible(id) {
-      const content = document.getElementById(id);
-      content.classList.toggle('active');
     }
   </script>
 </body>
